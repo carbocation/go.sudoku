@@ -14,3 +14,16 @@ func Cross(A string, B string) []string {
 
     return out
 }
+
+func BuildUnitList(rows string, cols string) [][]string {
+    out := [][]string{}
+    for _, c := range cols {
+        out = append(out, Cross(rows, string(c)))
+    }
+
+    for _, r := range rows {
+        out = append(out, Cross(string(r), cols))
+    }
+
+    return out
+}

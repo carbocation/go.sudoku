@@ -8,8 +8,9 @@ import (
 func main() {
     digits := "123456789"
     rows := "ABCDEFGHI"
-    squares := sudoku.Cross(rows, digits)
-    
-    
-    fmt.Println(squares)
+    cols := digits
+    //squares := sudoku.Cross(rows, cols)
+    unitlist := sudoku.BuildUnitList(rows, cols)
+
+    fmt.Println(unitlist)
 }
