@@ -25,5 +25,11 @@ func BuildUnitList(rows string, cols string) [][]string {
         out = append(out, Cross(string(r), cols))
     }
 
+    for _, rs := range []string{"ABC", "DEF", "GHI"} {
+        for _, cs := range []string{"123", "456", "789"} {
+            out = append(out, Cross(rs, cs))
+        }
+    }
+
     return out
 }
