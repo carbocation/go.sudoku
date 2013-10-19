@@ -15,7 +15,7 @@ func Cross(A string, B string) []string {
     return out
 }
 
-func BuildUnitList(rows string, cols string) [][]string {
+func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []string) [][]string {
     out := [][]string{}
     for _, c := range cols {
         out = append(out, Cross(rows, string(c)))
@@ -25,8 +25,8 @@ func BuildUnitList(rows string, cols string) [][]string {
         out = append(out, Cross(string(r), cols))
     }
 
-    for _, rs := range []string{"ABC", "DEF", "GHI"} {
-        for _, cs := range []string{"123", "456", "789"} {
+    for _, rs := range rowBlocks {
+        for _, cs := range rowCols {
             out = append(out, Cross(rs, cs))
         }
     }
