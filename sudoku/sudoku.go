@@ -16,6 +16,7 @@ import (
 var digits, rows, cols = "123456789", "ABCDEFGHI", "123456789"
 var squares []string
 var unitlist [][]string
+var values map[string]string
 var peers map[string][]string
 var units map[string][][]string
 var validCharRegex *regexp.Regexp
@@ -55,6 +56,12 @@ func init() {
 				}
 			}
 		}
+	}
+	
+	//At initialization, `values` says "every square can contain every value"
+	values = map[string]string{}
+	for _, square := range squares {
+		values[square] = digits
 	}
 	
 	/*
@@ -99,25 +106,29 @@ func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []strin
 
 //Convert grid to a map of possible values, {square: digits}, or emit false if a contradiction is detected.
 func ParseGrid(Grid string) (string, bool) {
-	//To start, every square can be any digit; then assign values from the grid.
-	//At initialization, `values` says "every square can contain every value"
-	values := map[string][]string{}
-	for _, square := range squares {
-		values[square] = append(values[square], digits)
-	}
-	
 	//If you can't parse the grid, the game makes no sense
 	vGrid := strings.Join(validCharRegex.FindAllString(Grid, -1), "")
-	if gridMap, ok := gridValues(vGrid); !ok {
+	gridMap, ok := gridValues(vGrid)
+	if !ok {
 		return vGrid, false
-	} else {
-		return fmt.Sprintln(gridMap), true
-		
-		//TODO: 
-		for s, d := range gridMap {
-			//etc
-		} 
 	}
+	
+	fmt.Println("vGrid ", vGrid, " is valid")
+	
+	//TODO: 
+	for s, d := range gridMap {
+		//s quare, d igits (that are still available)
+		//etc
+		for _, xd := range digits {
+			if d == string(xd) {
+				if !assign(s, d) {
+					return vGrid, false
+				}
+			}
+		}
+	}
+	
+	return fmt.Sprintln(gridMap), true
 }
 
 //Convert grid into a dict of {square: char} with '0' or '.' for empties.
@@ -135,4 +146,110 @@ func gridValues(vGrid string) (map[string]string, bool) {
 	}
 	
 	return out, true
+}
+
+//Eliminate all the other possible values at square s, except digit d, and propagate. 
+// Return false if a contradiction is detected.
+func assign(s, d string) bool {
+	//Find all other digit values that this square previously could have accepted.
+	otherValues := make([]string, len(values[s])-1)
+	for _, v := range values[s] {
+		if string(v) == d {
+			continue
+		}
+		
+		otherValues = append(otherValues, string(v))
+	}
+	
+	//Now eliminate all of these values from the master values record
+	//If the operation ever fails, return with failure
+	for _, d2 := range otherValues {
+		if ok := eliminate(s, d2); !ok {
+			return false
+		}
+	}
+	
+	//Default: succeed
+	return true
+}
+
+//Eliminate digit d from the list of possible values at square s (values[s]); propagate when values or places <= 2.
+//  Return false if a contradiction is detected.
+func eliminate(s, d string) bool {
+	
+	dInValuesS, dKey := false, 0
+	for dk, val := range values[s] {
+		if string(val) == d {
+			dInValuesS = true
+			dKey = dk
+			break
+		}
+	}
+	
+	//Digit has already been eliminated from values[s]. We're done here.
+	if !dInValuesS {
+		return true
+	}
+	
+	//Remove digit from values[s]
+	values[s] = values[s][:dKey] + values[s][dKey+1:]
+	
+	//Having removed the digit from the square's possible values, if values[s] is now empty, 
+	// we've arrived at a contradiction.
+	if len(values[s]) == 0 {
+		//Contradiction: removed last possible value for this square
+		fmt.Println("Cannot remove ",d," from values[s] because that leaves you with 0 possible values.") 
+		return false
+	} else if len(values[s]) == 1 {
+		//(1) If this square s is reduced to one possible digit d2, then that is the square's solution. Eliminate digit d2 from its peers.
+		d2 := values[s] //The only remaining value `d2` for values[s]
+		fmt.Println("Assigned values[",s,"]==", d2,", its final value. Now eliminating ", d2," from peers[", s,"] == ", peers[s]) 
+		for _, s2 := range peers[s] {
+			//Eliminate the only possible answer to values[s] from all of the peers of s
+			if ok := eliminate(s2, d2); !ok {
+				return false
+			}
+		}
+	}
+	
+	//(2) For all of the units that this square belongs to, 
+	//if the unit is reduced to only one place where this digit d could go, then put d there.
+	for _, u := range units[s] {
+		//fmt.Println("units[", s,"] == ", u)
+		/*
+		fmt.Println("values[s] = ", values[s])
+		fmt.Println(d)
+		*/
+		//Iterate over all of the other squares in this square's units. 
+		// For this unit, grab all of the squares that can accept `d`
+		dPlaces := []string{}
+		//For every square in the unit
+		for _, s2 := range u {
+			NextSquare:
+			//For every digit that this square can accept
+			for _, d2 := range values[s2] {
+				//If d is in that square's digit list
+				if d == string(d2) {
+					//Then dPlaces includes this square
+					dPlaces = append(dPlaces, s2)
+					continue NextSquare 
+				}
+			}
+		}
+		
+		if len(dPlaces) == 0 {
+			//No place to put d; contradiction
+			fmt.Println("Fail: no place to put digit ", d," in unit ", u)
+			return false
+		} else if len(dPlaces) == 1 {
+			//D must go into dPlaces[0]
+			fmt.Println("While ",d," was being excluded from ", s, ", it was discovered that for group ", u," ", d, " could only belong to ", dPlaces[0], ". ")
+			if !assign(dPlaces[0], d) {
+				fmt.Println("Some problem occurred when assigning d to dPlaces[0]")
+				return false 
+			}
+		}
+	}
+	
+	return true
 }
