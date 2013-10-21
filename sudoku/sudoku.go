@@ -16,7 +16,7 @@ import (
 var digits, rows, cols = "123456789", "ABCDEFGHI", "123456789"
 var squares []string
 var unitlist [][]string
-var values map[string]string
+//var values map[string]string
 var peers map[string][]string
 var units map[string][][]string
 var validCharRegex *regexp.Regexp
@@ -62,12 +62,6 @@ func initialize() {
 		}
 	}
 	
-	//At initialization, `values` says "every square can contain every value"
-	values = map[string]string{}
-	for _, square := range squares {
-		values[square] = digits
-	}
-	
 	/*
 	fmt.Println("squares: ", squares)
 	fmt.Println("unitlist: ", unitlist)
@@ -109,13 +103,20 @@ func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []strin
 }
 
 //Convert grid to a map of possible values, {square: digits}, or emit false if a contradiction is detected.
-func ParseGrid(Grid string) (string, bool) {
-	initialize()
+func ParseGrid(Grid string) (map[string]string, bool) {
+	//initialize()
+	
+	//At initialization, `values` says "every square can contain every value"
+	values := map[string]string{}
+	for _, square := range squares {
+		values[square] = digits
+	}
+	
 	//If you can't parse the grid, the game makes no sense
 	vGrid := strings.Join(validCharRegex.FindAllString(Grid, -1), "")
 	gridMap, ok := gridValues(vGrid)
 	if !ok {
-		return fmt.Sprintln(values), false
+		return values, false
 	}
 	
 	//For each square and its value from the GridMap 
@@ -123,13 +124,13 @@ func ParseGrid(Grid string) (string, bool) {
 		//For each allowed digit
 		for _, xd := range digits {
 			//If the GridMap square's value is an allowed digit
-			if d == string(xd) && !assign(s, d) {
-				return fmt.Sprintln(values), false
+			if d == string(xd) && !assign(values, s, d) {
+				return values, false
 			}
 		}
 	}
 	
-	return fmt.Sprintln(values), true
+	return values, true
 }
 
 //Convert grid into a dict of {square: char} with '0' or '.' for empties.
@@ -151,7 +152,7 @@ func gridValues(vGrid string) (map[string]string, bool) {
 
 //Eliminate all the other possible values at square s, except digit d, and propagate. 
 // Return false if a contradiction is detected.
-func assign(s, d string) bool {
+func assign(values map[string]string, s, d string) bool {
 	//Find all other digit values that this square previously could have accepted.
 	otherValues := make([]string, len(values[s])-1)
 	for _, v := range values[s] {
@@ -165,7 +166,7 @@ func assign(s, d string) bool {
 	//Now eliminate all of these values from the master values record
 	//If the operation ever fails, return with failure
 	for _, d2 := range otherValues {
-		if ok := eliminate(s, d2); !ok {
+		if ok := eliminate(values, s, d2); !ok {
 			return false
 		}
 	}
@@ -176,7 +177,7 @@ func assign(s, d string) bool {
 
 //Eliminate digit d from the list of possible values at square s (values[s]); propagate when values or places <= 2.
 //  Return false if a contradiction is detected.
-func eliminate(s, d string) bool {
+func eliminate(values map[string]string, s, d string) bool {
 	
 	dInValuesS, dKey := false, 0
 	for dk, val := range values[s] {
@@ -207,7 +208,7 @@ func eliminate(s, d string) bool {
 		//fmt.Println("Assigned values[",s,"]==", d2,", its final value. Now eliminating ", d2," from peers[", s,"] == ", peers[s]) 
 		for _, s2 := range peers[s] {
 			//Eliminate the only possible answer to values[s] from all of the peers of s
-			if ok := eliminate(s2, d2); !ok {
+			if ok := eliminate(values, s2, d2); !ok {
 				return false
 			}
 		}
@@ -245,7 +246,7 @@ func eliminate(s, d string) bool {
 		} else if len(dPlaces) == 1 {
 			//D must go into dPlaces[0]
 			//fmt.Println("While ",d," was being excluded from ", s, ", it was discovered that for group ", u," ", d, " could only belong to ", dPlaces[0], ". ")
-			if !assign(dPlaces[0], d) {
+			if !assign(values, dPlaces[0], d) {
 				//fmt.Println("Some problem occurred when assigning d to dPlaces[0]")
 				return false 
 			}
@@ -255,7 +256,9 @@ func eliminate(s, d string) bool {
 	return true
 }
 
-func DisplayCompact() string {
+//func Solve
+
+func DisplayCompact(values map[string]string) string {
 	out := []byte{}
 	for _, r := range rows {
 		for _, c := range cols {
@@ -267,7 +270,7 @@ func DisplayCompact() string {
 	return string(out)
 }
 
-func Display() string {
+func Display(values map[string]string) string {
 	mLen := 0
 	for _, s := range squares { 
 		if len(values[s]) > mLen {
@@ -318,15 +321,3 @@ func strWid(s string, width int) string {
 	
 	return s 
 }
-
-/*
-def display(values):
-    "Display these values as a 2-D grid."
-    width = 1+max(len(values[s]) for s in squares)
-    line = '+'.join(['-'*(width*3)]*3)
-    for r in rows:
-        print ''.join(values[r+c].center(width)+('|' if c in '36' else '')
-                      for c in cols)
-        if r in 'CF': print line
-    print
-*/
