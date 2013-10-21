@@ -255,12 +255,68 @@ func eliminate(s, d string) bool {
 	return true
 }
 
-func Display(values map[string]string) string {
-	if len(values["OK"]) > 0 {
-		return ``
+func DisplayCompact() string {
+	out := []byte{}
+	for _, r := range rows {
+		for _, c := range cols {
+			s := fmt.Sprintf("%s%s", string(r),string(c))
+			out = append(out, []byte(values[s])...)
+		}
 	}
 	
-	return ``
+	return string(out)
+}
+
+func Display() string {
+	mLen := 0
+	for _, s := range squares { 
+		if len(values[s]) > mLen {
+			mLen = len(values[s])
+		}
+	}
+	width := mLen + 1
+	
+	line := []byte{}
+	for loop := 0; loop < 3; loop++ {
+		for i := 0; i < width * 3; i++ {
+			line = append(line, []byte("-")...)
+		}
+		if loop < 2 {
+			line = append(line, []byte("+")...)
+		}
+	}
+	line = append(line, []byte("\n")...)
+	
+	
+	out := []byte{}
+	for rn, r := range rows {
+		for cn, c := range cols {
+			s := fmt.Sprintf("%s%s", string(r),string(c))
+			out = append(out, []byte(strWid(values[s], width))...)
+			
+			if cn == 2 || cn == 5 {
+				out = append(out, []byte(`|`)...)
+			}
+		}
+		out = append(out, []byte("\n")...)
+		if rn == 2 || rn == 5 {
+			out = append(out, line...)
+		}
+	}
+	
+	return string(out)
+}
+
+func strWid(s string, width int) string {
+	if len(s) >= width {
+		return s
+	}
+	
+	for i := len(s); i < width; i++ {
+		s += " "
+	}
+	
+	return s 
 }
 
 /*
