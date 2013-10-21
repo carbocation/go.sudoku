@@ -22,6 +22,10 @@ var units map[string][][]string
 var validCharRegex *regexp.Regexp
 
 func init() {
+	initialize()
+}
+
+func initialize() {
 	validCharRegex = regexp.MustCompile(`[0-9]*\.*`)
     squares = Cross(rows, cols)
     unitlist = BuildUnitList(rows, cols, []string{"ABC", "DEF", "GHI"}, []string{"123", "456", "789"})
@@ -106,29 +110,26 @@ func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []strin
 
 //Convert grid to a map of possible values, {square: digits}, or emit false if a contradiction is detected.
 func ParseGrid(Grid string) (string, bool) {
+	initialize()
 	//If you can't parse the grid, the game makes no sense
 	vGrid := strings.Join(validCharRegex.FindAllString(Grid, -1), "")
 	gridMap, ok := gridValues(vGrid)
 	if !ok {
-		return vGrid, false
+		return fmt.Sprintln(values), false
 	}
 	
-	fmt.Println("vGrid ", vGrid, " is valid")
-	
-	//TODO: 
+	//For each square and its value from the GridMap 
 	for s, d := range gridMap {
-		//s quare, d igits (that are still available)
-		//etc
+		//For each allowed digit
 		for _, xd := range digits {
-			if d == string(xd) {
-				if !assign(s, d) {
-					return vGrid, false
-				}
+			//If the GridMap square's value is an allowed digit
+			if d == string(xd) && !assign(s, d) {
+				return fmt.Sprintln(values), false
 			}
 		}
 	}
 	
-	return fmt.Sprintln(gridMap), true
+	return fmt.Sprintln(values), true
 }
 
 //Convert grid into a dict of {square: char} with '0' or '.' for empties.
@@ -198,12 +199,12 @@ func eliminate(s, d string) bool {
 	// we've arrived at a contradiction.
 	if len(values[s]) == 0 {
 		//Contradiction: removed last possible value for this square
-		fmt.Println("Cannot remove ",d," from values[s] because that leaves you with 0 possible values.") 
+		//fmt.Println("Cannot remove ",d," from values[s] because that leaves you with 0 possible values.") 
 		return false
 	} else if len(values[s]) == 1 {
 		//(1) If this square s is reduced to one possible digit d2, then that is the square's solution. Eliminate digit d2 from its peers.
 		d2 := values[s] //The only remaining value `d2` for values[s]
-		fmt.Println("Assigned values[",s,"]==", d2,", its final value. Now eliminating ", d2," from peers[", s,"] == ", peers[s]) 
+		//fmt.Println("Assigned values[",s,"]==", d2,", its final value. Now eliminating ", d2," from peers[", s,"] == ", peers[s]) 
 		for _, s2 := range peers[s] {
 			//Eliminate the only possible answer to values[s] from all of the peers of s
 			if ok := eliminate(s2, d2); !ok {
@@ -239,13 +240,13 @@ func eliminate(s, d string) bool {
 		
 		if len(dPlaces) == 0 {
 			//No place to put d; contradiction
-			fmt.Println("Fail: no place to put digit ", d," in unit ", u)
+			//fmt.Println("Fail: no place to put digit ", d," in unit ", u)
 			return false
 		} else if len(dPlaces) == 1 {
 			//D must go into dPlaces[0]
-			fmt.Println("While ",d," was being excluded from ", s, ", it was discovered that for group ", u," ", d, " could only belong to ", dPlaces[0], ". ")
+			//fmt.Println("While ",d," was being excluded from ", s, ", it was discovered that for group ", u," ", d, " could only belong to ", dPlaces[0], ". ")
 			if !assign(dPlaces[0], d) {
-				fmt.Println("Some problem occurred when assigning d to dPlaces[0]")
+				//fmt.Println("Some problem occurred when assigning d to dPlaces[0]")
 				return false 
 			}
 		}
@@ -253,3 +254,23 @@ func eliminate(s, d string) bool {
 	
 	return true
 }
+
+func Display(values map[string]string) string {
+	if len(values["OK"]) > 0 {
+		return ``
+	}
+	
+	return ``
+}
+
+/*
+def display(values):
+    "Display these values as a 2-D grid."
+    width = 1+max(len(values[s]) for s in squares)
+    line = '+'.join(['-'*(width*3)]*3)
+    for r in rows:
+        print ''.join(values[r+c].center(width)+('|' if c in '36' else '')
+                      for c in cols)
+        if r in 'CF': print line
+    print
+*/
