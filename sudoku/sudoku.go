@@ -256,7 +256,64 @@ func eliminate(values map[string]string, s, d string) bool {
 	return true
 }
 
-//func Solve
+func Solve(Grid string) (map[string]string, bool) {
+	values, ok := ParseGrid(Grid)
+	if !ok {
+		return values, ok
+	}
+	
+	return search(values, true)
+}
+
+//TODO: Does search actually do a depth-first search and traverse all 
+// possible blocks? Probs not.
+func search(values map[string]string, ok bool) (map[string]string, bool) {
+	//Exit: already failed
+	if !ok{
+		return values, false
+	}
+	
+	//Exit: already solved the puzzle
+	solved := true
+	for _, s := range squares {
+		if len(values[s]) != 1 {
+			solved = false
+		}
+	}
+	if solved {
+		return values, true
+	}
+	
+	//Chose the unfilled square s with the fewest possibilities
+	min, sq := 10, ``
+	for _, s := range squares {
+		if len(values[s]) <= min && len(values[s]) > 1 {
+			min = len(values[s])
+			sq = s
+			
+			if min == 2 {
+				break
+			}
+		}
+	}
+	
+	//Clone 'values'
+	cpyValues := make(map[string]string, len(values))
+	for k, v := range values {
+		cpyValues[k] = v
+	}
+	
+	//For every possible digit, try to assign it to this square
+	for _, d := range values[sq] {
+		assgn := assign(cpyValues, sq, string(d))
+		return search(cpyValues, assgn)
+	}
+	
+	//for 
+	
+	//return values, ok
+	return map[string]string{}, false
+}
 
 func DisplayCompact(values map[string]string) string {
 	out := []byte{}

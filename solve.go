@@ -8,7 +8,18 @@ import (
 var values, ok, input = map[string]string{}, false, ``
 
 func main() {
-	input = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
+	input = 
+`8 5 . |. . 2 |4 . . 
+7 2 . |. . . |. . 9 
+. . 4 |. . . |. . . 
+------+------+------
+. . . |1 . 7 |. . 2 
+3 . 5 |. . . |9 . . 
+. 4 . |. . . |. . . 
+------+------+------
+. . . |. 8 . |. 7 . 
+. 1 7 |. . . |. . . 
+. . . |. 3 6 |. 4 . `
 	fmt.Println("Input: ")
 	fmt.Println(input)
 	if values, ok = sudoku.ParseGrid(input); ok {
@@ -18,10 +29,14 @@ func main() {
 	}
 	fmt.Println("Compact: ", sudoku.DisplayCompact(values))
 	fmt.Println("Full:\n")
-	fmt.Println(sudoku.Display(values))
+	result, ok := sudoku.Solve(input)
+	if !ok {
+		fmt.Println("Some unknown error during solving.")
+	}
+	fmt.Println(sudoku.Display(result))
 	
 	
-	
+/*
 	input = 
 `0 0 3 |0 2 0 |6 0 0 
 9 0 0 |3 0 5 |0 0 1 
@@ -44,5 +59,5 @@ func main() {
 	fmt.Println("Compact: ", sudoku.DisplayCompact(values))
 	fmt.Println("Full:\n")
 	fmt.Println(sudoku.Display(values))
-
+*/
 }
