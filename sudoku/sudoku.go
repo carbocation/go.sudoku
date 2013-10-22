@@ -8,6 +8,7 @@ package sudoku
 
 import (
 	//"bytes"
+	"errors"
 	"regexp"
 	"fmt"
 	"strings"
@@ -103,7 +104,7 @@ func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []strin
 }
 
 //Convert grid to a map of possible values, {square: digits}, or emit false if a contradiction is detected.
-func ParseGrid(Grid string) (map[string]string, bool) {
+func ParseGrid(Grid string) (map[string]string, error) {
 	//At initialization, `values` says "every square can contain every value"
 	values := map[string]string{}
 	for _, square := range squares {
@@ -112,9 +113,9 @@ func ParseGrid(Grid string) (map[string]string, bool) {
 	
 	//If you can't parse the grid, the game makes no sense
 	vGrid := strings.Join(validCharRegex.FindAllString(Grid, -1), "")
-	gridMap, ok := gridValues(vGrid)
-	if !ok {
-		return values, false
+	gridMap, err := gridValues(vGrid)
+	if err != nil {
+		return values, err
 	}
 	
 	//For each square and its value(s) from the GridMap 
@@ -124,100 +125,112 @@ func ParseGrid(Grid string) (map[string]string, bool) {
 			//If the GridMap square's value is an allowed digit (not just a blank placeholder)
 			if d == string(xd) {
 				//Try to assign that value
-				values, ok = assign(values, s, d)
-				if !ok {
-					return values, false
+				//fmt.Println("Assigning", d,"to square", s)
+				values, err = assign(values, s, d)
+				if err != nil {
+					return values, err
 				}
 			}
 		}
 	}
 	
-	return values, true
+	return values, nil
 }
 
 //Convert grid into a dict of {square: char} with '0' or '.' for empties.
-func gridValues(vGrid string) (map[string]string, bool) {
+func gridValues(vGrid string) (map[string]string, error) {
 	out := map[string]string{}
 	
 	//Accept any grid representation, but now let's slim the grid down to just the valid characters.
 	if len(vGrid) != 81 {
-		return map[string]string{}, false
+		return map[string]string{}, errors.New("vGrid does not contain 81 valid digits.")
 	}
 	
 	//Now create our output map, where each square on the grid is filled in with an empty placeholder or a value
 	for i := 0; i < 81; i++ {
-		out[squares[i]] = string(vGrid[i])
+		if string(vGrid[i]) == "0" {
+			out[squares[i]] = "."
+		} else {
+			out[squares[i]] = string(vGrid[i])
+		}
 	}
 	
-	return out, true
+	return out, nil
 }
 
 //Eliminate all the other possible values at square s, except digit d, and propagate. 
 // Return false if a contradiction is detected.
-func assign(values map[string]string, s, d string) (map[string]string, bool) {
-	ok := false
+func assign(values map[string]string, s, d string) (map[string]string, error) {
+	//If this square has no possible values, you fail
+	if len(values[s]) < 1 {
+		return values, errors.New(fmt.Sprintf("values[%s] has no permissible digits left; contradiction.", s))
+	}
 	
 	//Find all other digit values that this square previously could have accepted.
-	if len(values[s]) < 1 {
-		return values, false
-	}
-	otherValues := make([]string, len(values[s])-1)
+	//otherValues := make([]string, len(values[s])-1)
+	otherValues := ``
 	for _, v := range values[s] {
+		//This value, d, is by definition not one of the "other" values
 		if string(v) == d {
 			continue
 		}
 		
-		otherValues = append(otherValues, string(v))
+		otherValues = otherValues + string(v)
+		// append(otherValues, string(v))
 	}
 	
 	//Now eliminate all of these values from the master values record
 	//If the operation ever fails, return with failure
-	for _, d2 := range otherValues {
-		if values, ok = eliminate(values, s, d2); !ok {
-			return values, false
+	if len(otherValues) > 0 {
+		//fmt.Println(len(otherValues), otherValues)
+		for _, d2 := range otherValues {
+			//fmt.Println(s, d2, len(values[s]))
+			if _, err := eliminate(values, s, string(d2)); err != nil {
+				return nil, err
+			}
 		}
 	}
 	
 	//Default: succeed
-	return values, true
+	return values, nil
 }
 
 //Eliminate digit d from the list of possible values at square s (values[s]); propagate when values or places <= 2.
 //  Return false if a contradiction is detected.
-func eliminate(values map[string]string, s, d string) (map[string]string, bool) {
-	ok := false
+func eliminate(values map[string]string, s, d string) (map[string]string, error) {
+	err := error(nil)
 	
-	dInValuesS, dKey := false, 0
-	for dk, val := range values[s] {
+	dInValuesS := false
+	for _, val := range values[s] {
 		if string(val) == d {
 			dInValuesS = true
-			dKey = dk
 			break
 		}
 	}
 	
 	//Digit has already been eliminated from values[s]. We're done here.
 	if !dInValuesS {
-		return values, true
+		return values, nil
 	}
 	
 	//Remove digit from values[s]
-	values[s] = values[s][:dKey] + values[s][dKey+1:]
+	//values[s] = values[s][:dKey] + values[s][dKey+1:]
+	values[s] = strings.Replace(values[s], d, "", -1)
 	
 	//Having removed the digit from the square's possible values, if values[s] is now empty, 
 	// we've arrived at a contradiction.
 	if len(values[s]) == 0 {
 		//Contradiction: removed last possible value for this square
 		//fmt.Println("Cannot remove ",d," from values[s] because that leaves you with 0 possible values.") 
-		return values, false
+		return nil, errors.New(fmt.Sprintf("Cannot eliminate %s from values[%s] because now values[%s] has no valid potential digits (valid: %s).", d, s, s, values[s]))
 	} else if len(values[s]) == 1 {
 		//(1) If this square s is reduced to one possible digit d2, then that is the square's solution. Eliminate digit d2 from its peers.
 		d2 := values[s] //The only remaining value `d2` for values[s]
 		//fmt.Println("Assigned values[",s,"]==", d2,", its final value. Now eliminating ", d2," from peers[", s,"] == ", peers[s]) 
 		for _, s2 := range peers[s] {
 			//Eliminate the only possible answer to values[s] from all of the peers of s
-			if values, ok = eliminate(values, s2, d2); !ok {
-				return values, false
+			if values, err = eliminate(values, s2, d2); err != nil {
+				return values, err
 			}
 		}
 	}
@@ -231,7 +244,7 @@ func eliminate(values map[string]string, s, d string) (map[string]string, bool) 
 		fmt.Println(d)
 		*/
 		//Iterate over all of the other squares in this square's units. 
-		// For this unit, grab all of the squares that can accept `d`
+		// For this unit, grab all of the squares that can accept `d` (enumerate them in dPlaces)
 		dPlaces := []string{}
 		//For every square in the unit
 		for _, s2 := range u {
@@ -250,36 +263,36 @@ func eliminate(values map[string]string, s, d string) (map[string]string, bool) 
 		if len(dPlaces) == 0 {
 			//No place to put d; contradiction
 			//fmt.Println("Fail: no place to put digit ", d," in unit ", u)
-			return values, false
+			return values, errors.New(fmt.Sprintf("There is no place in unit %s to put %s.", u, d))
 		} else if len(dPlaces) == 1 {
 			//D must go into dPlaces[0]
 			//fmt.Println("While ",d," was being excluded from ", s, ", it was discovered that for group ", u," ", d, " could only belong to ", dPlaces[0], ". ")
-			values, ok = assign(values, dPlaces[0], d)
-			if !ok {
+			_, err = assign(values, dPlaces[0], d)
+			if err != nil {
 				//fmt.Println("Some problem occurred when assigning d to dPlaces[0]")
-				return values, false 
+				return values, err 
 			}
 		}
 	}
 	
-	return values, true
+	return values, nil
 }
 
-func Solve(Grid string) (map[string]string, bool) {
-	values, ok := ParseGrid(Grid)
-	if !ok {
-		return values, ok
+func Solve(Grid string) (map[string]string, error) {
+	values, err := ParseGrid(Grid)
+	if err != nil {
+		return values, err
 	}
 	
-	return search(values, true)
+	return search(values, nil)
 }
 
 //TODO: Does search actually do a depth-first search and traverse all 
 // possible blocks? Probs not.
-func search(values map[string]string, ok bool) (map[string]string, bool) {
+func search(values map[string]string, err error) (map[string]string, error) {
 	//Exit: already failed
-	if !ok{
-		return values, false
+	if err != nil{
+		return values, err
 	}
 	
 	//Exit: all squares have exactly one possible value, so you have already solved the puzzle
@@ -290,7 +303,7 @@ func search(values map[string]string, ok bool) (map[string]string, bool) {
 		}
 	}
 	if solved {
-		return values, true
+		return values, nil
 	}
 	
 	//The puzzle is not yet solved. For each square with more than 1 possibility, 
@@ -298,7 +311,7 @@ func search(values map[string]string, ok bool) (map[string]string, bool) {
 	// encounter a contradiction. If you do, back off and try the next square.
 	
 	//Chose the unfilled square s with the fewest possibilities
-	min, sq := 11, ``
+	min, sq := 100, ``
 	for _, s := range squares {
 		if len(values[s]) < min && len(values[s]) > 1 {
 			min = len(values[s])
@@ -310,24 +323,21 @@ func search(values map[string]string, ok bool) (map[string]string, bool) {
 		}
 	}
 	
-	cpyValues := cloneValues(values)
-	
 	//For every possible digit, try to assign it to this square
 	//This recursive call to search is the heart of the depth-first search
-	for _, d := range values[sq] {
-		//assgn, _ := assign(cpyValues, sq, string(d))
-		vx, ok := assign(cpyValues, sq, string(d))
-		if !ok {
+	for _, d := range values[sq] { 
+		vx, err := assign(cloneValues(values), sq, string(d))
+		fmt.Println("Test: Assigning sq",sq,"with options",values[sq],"to d",string(d),"yielded",err)
+		if err != nil {
 			continue
 		}
-		vx, ok = search(vx, ok)
-		if ok {
-			return vx, ok 
+		v2, err := search(vx, err)
+		if err == nil {
+			return v2, nil 
 		}
 	}
 	
-	//return values, ok
-	return map[string]string{}, false
+	return nil, errors.New("Your depth-first search failed on this branch.")
 }
 
 //Clone the values map
