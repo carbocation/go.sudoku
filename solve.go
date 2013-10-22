@@ -1,71 +1,14 @@
 package main
 
 import (
-    "github.com/carbocation/sudoku.git/sudoku"
-    "fmt"
+	"fmt"
+	"strings"
+
+	"github.com/carbocation/sudoku.git/sudoku"
 )
 
-var values, result, err, input = map[string]string{}, map[string]string{}, error(nil), ``
-
-func main() {
-	input = 
-`8 5 . |. . 2 |4 . . 
-7 2 . |. . . |. . 9 
-. . 4 |. . . |. . . 
-------+------+------
-. . . |1 . 7 |. . 2 
-3 . 5 |. . . |9 . . 
-. 4 . |. . . |. . . 
-------+------+------
-. . . |. 8 . |. 7 . 
-. 1 7 |. . . |. . . 
-. . . |. 3 6 |. 4 . `
-	fmt.Println("Input: ")
-	fmt.Println(input)
-	if values, err = sudoku.ParseGrid(input); err == nil {
-		fmt.Println("Grid is valid.")
-	} else {
-		fmt.Println("Parsed Grid: Illegal.", len(values), " valid chars (must be 81 valid chars)")
-		fmt.Println(err)
-	}
-	fmt.Println("Loaded: ")
-	fmt.Println(sudoku.Display(values))
-	fmt.Println("Solved:")
-	result, err = sudoku.Solve(input)
-	if err != nil {
-		fmt.Println("Some unknown error during solving.")
-		fmt.Println(err)
-	} else {
-		fmt.Println(sudoku.Display(result))
-	}
-	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-	
-	
-
-input = `85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4.`
-	fmt.Println("Input: ")
-	fmt.Println(input)
-	if values, err = sudoku.ParseGrid(input); err == nil {
-		fmt.Println("Grid is valid.")
-	} else {
-		fmt.Println("Parsed Grid: Illegal.", len(values), " valid chars (must be 81 valid chars)")
-		fmt.Println(err)
-	}
-	fmt.Println("Loaded: ")
-	fmt.Println(sudoku.Display(values))
-	fmt.Println("Solved:")
-	result, err = sudoku.Solve(input)
-	if err != nil {
-		fmt.Println("Some unknown error during solving.")
-		fmt.Println(err)
-	} else {
-		fmt.Println(sudoku.Display(result))
-	}
-	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-}
-
-/*
-85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4.
+var values, result, err = map[string]string{}, map[string]string{}, error(nil)
+var hardest = strings.Split(`85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4.
 ..53.....8......2..7..1.5..4....53...1..7...6..32...8..6.5....9..4....3......97..
 12..4......5.69.1...9...5.........7.7...52.9..3......2.9.6...5.4..9..8.1..3...9.4
 ...57..3.1......2.7...234......8...4..7..4...49....6.5.42...3.....7..9....18.....
@@ -75,5 +18,29 @@ input = `85...24..72......9..4.........1.7..23.5...9...4...........8..7..17.....
 ...92......68.3...19..7...623..4.1....1...7....8.3..297...8..91...5.72......64...
 .6.5.4.3.1...9...8.........9...5...6.4.6.2.7.7...4...5.........4...8...1.5.2.3.4.
 7.....4...2..7..8...3..8.799..5..3...6..2..9...1.97..6...3..9...3..4..6...9..1.35
-....7..2.8.......6.1.2.5...9.54....8.........3....85.1...3.2.8.4.......9.7..6....
-*/
+....7..2.8.......6.1.2.5...9.54....8.........3....85.1...3.2.8.4.......9.7..6....`, "\n")
+
+func main() {
+	for _, input := range hardest {
+		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+		fmt.Println("Input: ")
+		fmt.Println(input)
+		if values, err = sudoku.ParseGrid(input); err == nil {
+			fmt.Println("Grid is valid.")
+		} else {
+			fmt.Println("Parsed Grid: Illegal.", len(values), " valid chars (must be 81 valid chars)")
+			fmt.Println(err)
+		}
+		fmt.Println("Loaded: ")
+		fmt.Println(sudoku.Display(values))
+		fmt.Println("Solved:")
+		result, err = sudoku.Solve(input)
+		if err != nil {
+			fmt.Println("Some unknown error during solving.")
+			fmt.Println(err)
+		} else {
+			fmt.Println(sudoku.Display(result))
+		}
+		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+	}
+}
