@@ -5,7 +5,7 @@ import (
     "fmt"
 )
 
-var values, ok, input = map[string]string{}, false, ``
+var values, result, ok, input = map[string]string{}, map[string]string{}, false, ``
 
 func main() {
 	input = 
@@ -27,16 +27,19 @@ func main() {
 	} else {
 		fmt.Println("Parsed Grid: Illegal.", len(values), " valid chars (must be 81 valid chars)")
 	}
-	fmt.Println("Compact: ", sudoku.DisplayCompact(values))
-	fmt.Println("Full:\n")
-	result, ok := sudoku.Solve(input)
+	fmt.Println("Loaded: ")
+	fmt.Println(sudoku.Display(values))
+	fmt.Println("Solved:")
+	result, ok = sudoku.Solve(input)
 	if !ok {
 		fmt.Println("Some unknown error during solving.")
+	} else {
+		fmt.Println(sudoku.Display(result))
 	}
-	fmt.Println(sudoku.Display(result))
+	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	
 	
-/*
+
 	input = 
 `0 0 3 |0 2 0 |6 0 0 
 9 0 0 |3 0 5 |0 0 1 
@@ -56,8 +59,14 @@ func main() {
 	} else {
 		fmt.Println("Parsed Grid: Illegal.", len(values), " valid chars (must be 81 valid chars)")
 	}
-	fmt.Println("Compact: ", sudoku.DisplayCompact(values))
-	fmt.Println("Full:\n")
+	fmt.Println("Loaded: ")
 	fmt.Println(sudoku.Display(values))
-*/
+	fmt.Println("Solved:")
+	result, ok = sudoku.Solve(input)
+	if !ok {
+		fmt.Println("Some unknown error during solving.")
+	} else {
+		fmt.Println(sudoku.Display(result))
+	}
+	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 }
