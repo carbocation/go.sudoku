@@ -300,15 +300,18 @@ func search(values map[string]string, err error) (map[string]string, error) {
 		//*Cloning `values` is important*; if you don't, you mutate the original map and
 		// then you cannot backtrack if your depth-search algorithm fails to 
 		// guess right the first time at every step
-		vCloned, err := assign(cloneValues(values), sq, string(d))
-		//fmt.Println("Test: Assigning sq", sq, "with options", values[sq], "to d", string(d), "yielded", err)
-		if err != nil {
-			continue
-		}
-		vCloned, err = search(vCloned, err)
-		if err == nil {
-			return vCloned, nil
-		}
+		//ch make(<-map[string]string
+		//go func() (map[string]string, error) {
+			vCloned, err := assign(cloneValues(values), sq, string(d))
+			//fmt.Println("Test: Assigning sq", sq, "with options", values[sq], "to d", string(d), "yielded", err)
+			if err != nil {
+				continue
+			}
+			vCloned, err = search(vCloned, err)
+			if err == nil {
+				return vCloned, nil
+			}
+		//}()
 	}
 
 	return nil, errors.New("Your depth-first search failed on this branch.")
