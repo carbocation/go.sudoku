@@ -13,11 +13,18 @@ import (
 	"strings"
 )
 
+//The name of a square, which is the discrete entity that needs to be filled
+type Square string
+
+//The possible values that remain for each Square
+type SquarePossibilities map[Square]string
+
+
 var digits, rows, cols = "123456789", "ABCDEFGHI", "123456789"
-var squares []string
-var unitlist [][]string
-var peers map[string][]string
-var units map[string][][]string
+var squares []Square
+var unitlist [][]Square
+var peers map[Square][]Square
+var units map[Square][][]Square
 var validCharRegex *regexp.Regexp
 
 func init() {
@@ -28,7 +35,7 @@ func initialize() {
 	validCharRegex = regexp.MustCompile(`[0-9]*\.*`)
 	squares = Cross(rows, cols)
 	unitlist = BuildUnitList(rows, cols, []string{"ABC", "DEF", "GHI"}, []string{"123", "456", "789"})
-	units = map[string][][]string{}
+	units = map[Square][][]Square{}
 	for _, square := range squares {
 	Square:
 		for _, v := range unitlist {
@@ -42,7 +49,7 @@ func initialize() {
 		}
 	}
 
-	peers = map[string][]string{}
+	peers = map[Square][]Square{}
 	for square, unitlist := range units {
 		for _, unit := range unitlist {
 		NextUnitSquare:
@@ -63,19 +70,19 @@ func initialize() {
 
 //Take two strings and build a slice of strings, each of which are
 //bigrams taken from every AxB combination
-func Cross(A string, B string) []string {
-	var out []string
+func Cross(A string, B string) []Square {
+	var out []Square
 	for _, i := range A {
 		for _, j := range B {
-			out = append(out, string(i)+string(j))
+			out = append(out, Square(i)+Square(j))
 		}
 	}
 
 	return out
 }
 
-func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []string) [][]string {
-	out := [][]string{}
+func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []string) [][]Square {
+	out := [][]Square{}
 	for _, c := range cols {
 		out = append(out, Cross(rows, string(c)))
 	}
@@ -94,16 +101,16 @@ func BuildUnitList(rows string, cols string, rowBlocks []string, rowCols []strin
 }
 
 //Convert grid to a map of possible values, {square: digits}, or emit false if a contradiction is detected.
-func ParseGrid(Grid string) (map[string]string, error) {
+func ParseGrid(Grid string) (SquarePossibilities, error) {
 	//At initialization, `values` says "every square can contain every value"
-	values := map[string]string{}
+	values := SquarePossibilities{}
 	for _, square := range squares {
 		values[square] = digits
 	}
 
 	//If you can't parse the grid, the game makes no sense
 	vGrid := strings.Join(validCharRegex.FindAllString(Grid, -1), "")
-	gridMap, err := gridValues(vGrid)
+	gridMap, err := gridSquarePossibilities(vGrid)
 	if err != nil {
 		return nil, err
 	}
@@ -127,12 +134,12 @@ func ParseGrid(Grid string) (map[string]string, error) {
 }
 
 //Convert grid into a dict of {square: char} with '0' or '.' for empties.
-func gridValues(vGrid string) (map[string]string, error) {
-	out := map[string]string{}
+func gridSquarePossibilities(vGrid string) (SquarePossibilities, error) {
+	out := SquarePossibilities{}
 
 	//Accept any grid representation, but now let's slim the grid down to just the valid characters.
 	if len(vGrid) != 81 {
-		return map[string]string{}, errors.New("vGrid does not contain 81 valid digits.")
+		return SquarePossibilities{}, errors.New("vGrid does not contain 81 valid digits.")
 	}
 
 	//Now create our output map, where each square on the grid is filled in with an empty placeholder or a value
@@ -148,26 +155,26 @@ func gridValues(vGrid string) (map[string]string, error) {
 }
 
 //Assign square s to digit d, and propagate.
-func assign(values map[string]string, s, d string) (map[string]string, error) {
+func assign(values SquarePossibilities, s Square, d string) (SquarePossibilities, error) {
 	//If this square has no possible values, fail
 	if len(values[s]) < 1 {
 		return nil, errors.New(fmt.Sprintf("values[%s] has no permissible digits left; contradiction.", s))
 	}
 
 	//Find all other digit values that this square previously could have accepted.
-	otherValues := ``
+	otherSquarePossibilities := ``
 	for _, v := range values[s] {
 		//This value, d, is by definition not one of the "other" values
 		if string(v) == d {
 			continue
 		}
 
-		otherValues = otherValues + string(v)
+		otherSquarePossibilities = otherSquarePossibilities + string(v)
 	}
 
 	//Now try to eliminate all of these other values from the master values record
-	if len(otherValues) > 0 {
-		for _, d2 := range otherValues {
+	if len(otherSquarePossibilities) > 0 {
+		for _, d2 := range otherSquarePossibilities {
 			if _, err := eliminate(values, s, string(d2)); err != nil {
 				return nil, err
 			}
@@ -179,19 +186,19 @@ func assign(values map[string]string, s, d string) (map[string]string, error) {
 }
 
 //Eliminate digit d from the list of possible values at square s (values[s]) and propagate.
-func eliminate(values map[string]string, s, d string) (map[string]string, error) {
+func eliminate(values SquarePossibilities, s Square, d string) (SquarePossibilities, error) {
 	err := error(nil)
 
-	dInValuesS := false
+	dInSquarePossibilitiesS := false
 	for _, val := range values[s] {
 		if string(val) == d {
-			dInValuesS = true
+			dInSquarePossibilitiesS = true
 			break
 		}
 	}
 
 	//Digit has already been eliminated from values[s]. We're done here.
-	if !dInValuesS {
+	if !dInSquarePossibilitiesS {
 		return values, nil
 	}
 
@@ -219,7 +226,7 @@ func eliminate(values map[string]string, s, d string) (map[string]string, error)
 	for _, u := range units[s] {
 		//Iterate over all of the other squares in this square's units.
 		// For this unit, grab all of the squares that can accept `d` (enumerate them in dPlaces)
-		dPlaces := []string{}
+		dPlaces := []Square{}
 		//For every square in the unit
 		for _, s2 := range u {
 		NextSquare:
@@ -250,7 +257,7 @@ func eliminate(values map[string]string, s, d string) (map[string]string, error)
 	return values, nil
 }
 
-func Solve(Grid string) (map[string]string, error) {
+func Solve(Grid string) (SquarePossibilities, error) {
 	values, err := ParseGrid(Grid)
 	if err != nil {
 		return values, err
@@ -259,7 +266,7 @@ func Solve(Grid string) (map[string]string, error) {
 	return search(values, nil)
 }
 
-func search(values map[string]string, err error) (map[string]string, error) {
+func search(values SquarePossibilities, err error) (SquarePossibilities, error) {
 	//Exit: already failed
 	if err != nil {
 		return values, err
@@ -282,7 +289,7 @@ func search(values map[string]string, err error) (map[string]string, error) {
 
 	//Chose the unfilled square s with the fewest possibilities
 	//(minimize probability of guessing wrong)
-	min, sq := len(digits) + 1, ``
+	min, sq := len(digits) + 1, Square("")
 	for _, s := range squares {
 		if len(values[s]) < min && len(values[s]) > 1 {
 			min = len(values[s])
@@ -302,7 +309,7 @@ func search(values map[string]string, err error) (map[string]string, error) {
 		// guess right the first time at every step
 		//ch make(<-map[string]string
 		//go func() (map[string]string, error) {
-			vCloned, err := assign(cloneValues(values), sq, string(d))
+			vCloned, err := assign(cloneSquarePossibilities(values), sq, string(d))
 			//fmt.Println("Test: Assigning sq", sq, "with options", values[sq], "to d", string(d), "yielded", err)
 			if err != nil {
 				continue
@@ -318,13 +325,13 @@ func search(values map[string]string, err error) (map[string]string, error) {
 }
 
 //Clone the values map
-func cloneValues(values map[string]string) map[string]string {
-	cpyValues := make(map[string]string, len(values))
+func cloneSquarePossibilities(values SquarePossibilities) SquarePossibilities {
+	cpySquarePossibilities := make(SquarePossibilities, len(values))
 	for k, v := range values {
-		cpyValues[k] = v
+		cpySquarePossibilities[k] = v
 	}
 
-	return cpyValues
+	return cpySquarePossibilities
 }
 
 func DisplayCompact(values map[string]string) string {
@@ -339,7 +346,7 @@ func DisplayCompact(values map[string]string) string {
 	return string(out)
 }
 
-func Display(values map[string]string) string {
+func Display(values SquarePossibilities) string {
 	mLen := 0
 	for _, s := range squares {
 		if len(values[s]) > mLen {
@@ -362,7 +369,7 @@ func Display(values map[string]string) string {
 	out := []byte{}
 	for rn, r := range rows {
 		for cn, c := range cols {
-			s := fmt.Sprintf("%s%s", string(r), string(c))
+			s := Square(fmt.Sprintf("%s%s", string(r), string(c)))
 			out = append(out, []byte(strWid(values[s], width))...)
 
 			if cn == 2 || cn == 5 {

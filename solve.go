@@ -7,7 +7,7 @@ import (
 	"github.com/carbocation/go.sudoku/sudoku"
 )
 
-var values, result, err = map[string]string{}, map[string]string{}, error(nil)
+var values, result, err = sudoku.SquarePossibilities{}, sudoku.SquarePossibilities{}, error(nil)
 //Pathologic: .....6....59.....82....8....45........3........6..3.54...325..6..................
 var hardest = strings.Split(`...8.1..........435............7.8........1...2..3....6......75..34........2..6..
 85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4.
