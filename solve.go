@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/carbocation/go.sudoku/sudoku"
+	"github.com/carbocation/constraint-scheduler/solver"
 )
 
-var values, result, err = sudoku.SquarePossibilities{}, sudoku.SquarePossibilities{}, error(nil)
+var values, result, err = solver.SquarePossibilities{}, solver.SquarePossibilities{}, error(nil)
+
 //Pathologic: .....6....59.....82....8....45........3........6..3.54...325..6..................
 var hardest = strings.Split(`...8.1..........435............7.8........1...2..3....6......75..34........2..6..
 85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4.
@@ -27,21 +28,21 @@ func main() {
 		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 		fmt.Println("Input: ")
 		fmt.Println(input)
-		if values, err = sudoku.ParseGrid(input); err == nil {
+		if values, err = solver.ParseGrid(input); err == nil {
 			fmt.Println("Grid is valid.")
 		} else {
 			fmt.Println("Parsed Grid: Illegal.", len(values), " valid chars (must be 81 valid chars)")
 			fmt.Println(err)
 		}
 		fmt.Println("Loaded: ")
-		fmt.Println(sudoku.Display(values))
+		fmt.Println(solver.Display(values))
 		fmt.Println("Solved:")
-		result, err = sudoku.Solve(input)
+		result, err = solver.Solve(input)
 		if err != nil {
 			fmt.Println("Some unknown error during solving.")
 			fmt.Println(err)
 		} else {
-			fmt.Println(sudoku.Display(result))
+			fmt.Println(solver.Display(result))
 		}
 		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	}

@@ -1,10 +1,10 @@
 /*
-Package sudoku implements the sudoku solver written about in Peter Norvig's essay,
+Package solver implements the sudoku solver written about in Peter Norvig's essay,
 "Solving Every Sudoku Puzzle" http://norvig.com/sudoku.html
 
 Go implementation by James Pirruccello, 2013
 */
-package sudoku
+package solver
 
 import (
 	"errors"
@@ -18,7 +18,6 @@ type Square string
 
 //The possible values that remain for each Square
 type SquarePossibilities map[Square]string
-
 
 var digits, rows, cols = "123456789", "ABCDEFGHI", "123456789"
 var squares []Square
@@ -289,7 +288,7 @@ func search(values SquarePossibilities, err error) (SquarePossibilities, error) 
 
 	//Chose the unfilled square s with the fewest possibilities
 	//(minimize probability of guessing wrong)
-	min, sq := len(digits) + 1, Square("")
+	min, sq := len(digits)+1, Square("")
 	for _, s := range squares {
 		if len(values[s]) < min && len(values[s]) > 1 {
 			min = len(values[s])
@@ -305,19 +304,19 @@ func search(values SquarePossibilities, err error) (SquarePossibilities, error) 
 	//This recursive call to search is the heart of the depth-first search
 	for _, d := range values[sq] {
 		//*Cloning `values` is important*; if you don't, you mutate the original map and
-		// then you cannot backtrack if your depth-search algorithm fails to 
+		// then you cannot backtrack if your depth-search algorithm fails to
 		// guess right the first time at every step
 		//ch make(<-map[string]string
 		//go func() (map[string]string, error) {
-			vCloned, err := assign(cloneSquarePossibilities(values), sq, string(d))
-			//fmt.Println("Test: Assigning sq", sq, "with options", values[sq], "to d", string(d), "yielded", err)
-			if err != nil {
-				continue
-			}
-			vCloned, err = search(vCloned, err)
-			if err == nil {
-				return vCloned, nil
-			}
+		vCloned, err := assign(cloneSquarePossibilities(values), sq, string(d))
+		//fmt.Println("Test: Assigning sq", sq, "with options", values[sq], "to d", string(d), "yielded", err)
+		if err != nil {
+			continue
+		}
+		vCloned, err = search(vCloned, err)
+		if err == nil {
+			return vCloned, nil
+		}
 		//}()
 	}
 
