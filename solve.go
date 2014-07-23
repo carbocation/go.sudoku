@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/carbocation/constraint-scheduler/solver"
+	"github.com/carbocation/go.sudoku/solver"
 )
 
 var values, result, err = solver.SquarePossibilities{}, solver.SquarePossibilities{}, error(nil)
