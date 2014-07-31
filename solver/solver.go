@@ -228,14 +228,13 @@ func eliminate(values SquarePossibilities, s Square, d string) (SquarePossibilit
 		dPlaces := []Square{}
 		//For every square in the unit
 		for _, s2 := range u {
-		NextSquare:
 			//For every digit that this square can accept
 			for _, d2 := range values[s2] {
 				//If d is in that square's digit list
 				if d == string(d2) {
 					//Then dPlaces includes this square
 					dPlaces = append(dPlaces, s2)
-					continue NextSquare
+					break
 				}
 			}
 		}
